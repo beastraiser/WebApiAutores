@@ -2,10 +2,13 @@
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using WebApiAutores.Controllers.Entidades;
+using WebApiAutores.Servicios;
 
 namespace WebApiAutores.Controllers
 {
-    //---------- DEFINICION DEL CONTROLADOR ----------
+    // |-----------------------------|
+    // |  DEFINICION DE CONTROLADOR  | 
+    // |-----------------------------|
 
     [ApiController] // Retorna un error 4XX si hay un error a nivel de modelo
     [Route("api/autores")] 
@@ -16,14 +19,27 @@ namespace WebApiAutores.Controllers
     {
 
         private readonly ApplicationDbContext context;
+        private readonly IServicio servicio;
+        private readonly ServicioTransient servicioTransient;
+        private readonly ServicioScoped servicioScoped;
+        private readonly ServicioSingleton servicioSingleton;
 
-        public AutoresController(ApplicationDbContext context)
+        public AutoresController(ApplicationDbContext context, IServicio servicio, ServicioTransient servicioTransient, ServicioScoped servicioScoped, ServicioSingleton servicioSingleton) 
+            // IServicio -> Esto se llama inyeccion de dependencias.
+            // Se inyecta la interfaz que contiene múltiples servicios, en vez de un servicio concreto.
+            // Esto se llama PRINCIPIO SOLID -> Depender de abstracciones y no de tipos concretos.
+            // Todas las interfaces se encuentran en la carpeta Servicios.
         {
             this.context = context;
+            this.servicio = servicio;
+            this.servicioTransient = servicioTransient;
+            this.servicioScoped = servicioScoped;
+            this.servicioSingleton = servicioSingleton;
         }
 
-        //---------- DEFINICION DE LOS ENDPOINTS ----------
-
+        // |-----------------------------|
+        // | DEFINICION DE LOS ENDPOINTS | 
+        // |-----------------------------|
 
         // La asincronía es necesaria cada vez que se pide cualquier recurso externo a nuestra aplicación.
         // Estos recursos pueden ser de una API, una Base de Datos o un Sistema Operativo.
@@ -157,12 +173,47 @@ namespace WebApiAutores.Controllers
             return autor;
         }
 
+        //---------- GET ---------- api/autores/GUID
+
+        [HttpGet("GUID")]
+        public ActionResult ObtenerGuids()
+        {
+            return Ok(new
+            {
+                // Transient -> van a cambiar con cada ejecución y cada uno es diferente
+                // ---------------------------------------------------------------------
+
+                AutoresControllerTransient = servicioTransient.guid, // Retorna el guid a través del ServicioB
+                ServicioA_Transient = servicio.ObtenerTransient(), // Retorna el guid a través del ServicioA
+
+                // Scoped -> van a cambiar con cada ejecución pero son iguales los 2
+                // -----------------------------------------------------------------
+
+                AutoresControllerScoped = servicioScoped.guid, // Retorna el guid a través del ServicioB
+                ServicioA_Scoped = servicio.ObtenerScoped(), // Retorna el guid a través del ServicioA
+
+                // Singleton -> van a mantenerse durante todas las ejecuciones y son iguales los 2
+                // -------------------------------------------------------------------------------
+
+                AutoresControllerSingleton = servicioSingleton.guid, // Retorna el guid a través del ServicioB
+                ServicioA_Singleton = servicio.ObtenerSignleton() // Retorna el guid a través del ServicioA
+            });
+        }
+
         //---------- POST ----------
 
         [HttpPost] //-> Atributo del endpoint
                    //Si se ejecuta una petición POST hacia este controlador, se ejecutará el código que hay dentro de este bloque
         public async Task<ActionResult> Post([FromBody]Autor autor)
         {
+
+            var existeAutorConElMismoNombre = await context.Autores.AnyAsync(x => x.Nombre == autor.Nombre );
+
+            if (existeAutorConElMismoNombre)
+            {
+                return BadRequest($"Ya existe un autor con el nombre {autor.Nombre}");
+            }
+
             context.Add(autor);
             await context.SaveChangesAsync();
             return Ok();
