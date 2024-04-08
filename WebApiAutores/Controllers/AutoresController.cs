@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using WebApiAutores.Controllers.Entidades;
+using WebApiAutores.DTOs;
 using WebApiAutores.Filtros;
 using WebApiAutores.Servicios;
 
@@ -22,24 +24,27 @@ namespace WebApiAutores.Controllers
     {
 
         private readonly ApplicationDbContext context;
-        private readonly IServicio servicio;
-        private readonly ServicioTransient servicioTransient;
-        private readonly ServicioScoped servicioScoped;
-        private readonly ServicioSingleton servicioSingleton;
-        private readonly ILogger<AutoresController> logger;
+        private readonly IMapper mapper;
 
-        public AutoresController(ApplicationDbContext context, IServicio servicio, ServicioTransient servicioTransient, ServicioScoped servicioScoped, ServicioSingleton servicioSingleton, ILogger<AutoresController> logger) 
+        //private readonly IServicio servicio;
+        //private readonly ServicioTransient servicioTransient;
+        //private readonly ServicioScoped servicioScoped;
+        //private readonly ServicioSingleton servicioSingleton;
+        //private readonly ILogger<AutoresController> logger;
+
+        public AutoresController(ApplicationDbContext context, IMapper mapper/*, IServicio servicio, ServicioTransient servicioTransient, ServicioScoped servicioScoped, ServicioSingleton servicioSingleton, ILogger<AutoresController> logger*/) 
             // IServicio -> Esto se llama inyeccion de dependencias.
             // Se inyecta la interfaz que contiene múltiples servicios, en vez de un servicio concreto.
             // Esto se llama PRINCIPIO SOLID -> Depender de abstracciones y no de tipos concretos.
             // Todas las interfaces se encuentran en la carpeta Servicios.
         {
             this.context = context;
-            this.servicio = servicio;
-            this.servicioTransient = servicioTransient;
-            this.servicioScoped = servicioScoped;
-            this.servicioSingleton = servicioSingleton;
-            this.logger = logger;
+            this.mapper = mapper;
+            //this.servicio = servicio;
+            //this.servicioTransient = servicioTransient;
+            //this.servicioScoped = servicioScoped;
+            //this.servicioSingleton = servicioSingleton;
+            //this.logger = logger;
         }
 
         // |-----------------------------|
@@ -55,69 +60,70 @@ namespace WebApiAutores.Controllers
 
         //---------- GET ---------- api/autores/sincrono
 
-        [HttpGet("sincrono")] // -> Atributo del endpoint. Concatena su contenido a la ruta heredada del controlador.
-                              // Si no hubiese ningún atributo heredaría la ruta del controlador: "api/autores".
-                              // Si se ejecuta una petición GET hacia este controlador, se ejecutará el código que hay dentro de este bloque.
-        public List<Autor> ResultadoSincrono()
-        {
-            return context.Autores.Include(x => x.Libros).ToList();
-            // Es un ejemplo de endpoint sin asincronía. Returna un dato de tipo Lista de Autor.
-            // Esto funciona perfectamente pero no se podría retornar ningun dato que no fuese de Autor, como NotFound() para el manejo de errores.
+        //[HttpGet("sincrono")] // -> Atributo del endpoint. Concatena su contenido a la ruta heredada del controlador.
+        //                      // Si no hubiese ningún atributo heredaría la ruta del controlador: "api/autores".
+        //                      // Si se ejecuta una petición GET hacia este controlador, se ejecutará el código que hay dentro de este bloque.
+        //public List<Autor> ResultadoSincrono()
+        //{
+        //    return context.Autores.Include(x => x.Libros).ToList();
+        //    // Es un ejemplo de endpoint sin asincronía. Returna un dato de tipo Lista de Autor.
+        //    // Esto funciona perfectamente pero no se podría retornar ningun dato que no fuese de Autor, como NotFound() para el manejo de errores.
 
-        }
+        //}
 
         //---------- GET ---------- api/autores/asincrono
 
-        [HttpGet("asincrono")]
-        public async Task<List<Autor>> ResultadoAsincrono() // Se añade "async" y "Task<>".
-        {
-            return await context.Autores.Include(x => x.Libros).ToListAsync(); // Se añade "await".
-            // Es el mismo endpoint de arriba pero habiendo aplicado la asincronía.
-            // El método ToList() no puede devolver datos de tipo Task<> -> cambia a ToListAsync().
+        //[HttpGet("asincrono")]
+        //public async Task<List<Autor>> ResultadoAsincrono() // Se añade "async" y "Task<>".
+        //{
+        //    return await context.Autores.Include(x => x.Libros).ToListAsync(); // Se añade "await".
+        //    // Es el mismo endpoint de arriba pero habiendo aplicado la asincronía.
+        //    // El método ToList() no puede devolver datos de tipo Task<> -> cambia a ToListAsync().
 
-        }
+        //}
 
         //---------- GET ---------- api/autores/actionresult/{id}
 
-        [HttpGet("actionresult/{id:int}")] 
-        public ActionResult<Autor> ResultadoActionResult(int id) // Mapear un parámetro a una variable "{id:int} -> int id" se denomina Model Binding
-        // ActionResult<> permite retornar cualquier dato de tipo Autor o de tipo ActionResult.
-        // Resulta que NotFound() hereda de ActionResult por lo que así puede ser devuelto.
-        {
-            var autor = context.Autores.FirstOrDefault(x => x.Id == id);
+        //[HttpGet("actionresult/{id:int}")] 
+        //public ActionResult<Autor> ResultadoActionResult(int id) // Mapear un parámetro a una variable "{id:int} -> int id" se denomina Model Binding
+        //// ActionResult<> permite retornar cualquier dato de tipo Autor o de tipo ActionResult.
+        //// Resulta que NotFound() hereda de ActionResult por lo que así puede ser devuelto.
+        //{
+        //    var autor = context.Autores.FirstOrDefault(x => x.Id == id);
 
-            if (autor == null)
-            {
-                return NotFound(); // Ahora NotFound() sí puede ser devuelto.
-            }
-            return autor;
-        }
+        //    if (autor == null)
+        //    {
+        //        return NotFound(); // Ahora NotFound() sí puede ser devuelto.
+        //    }
+        //    return autor;
+        //}
 
         //---------- GET ---------- api/autores/iactionresult/{id}
 
-        [HttpGet("iactionresult/{id:int}")]
-        public IActionResult ResultadoIActionResult(int id)
-        // IActionResult permite retornar cualquier dato de tipo ActionResult o de cualquier tipo mientras esté dentro de la función Ok().
-        {
-            var autor = context.Autores.FirstOrDefault(x => x.Id == id);
+        //[HttpGet("iactionresult/{id:int}")]
+        //public IActionResult ResultadoIActionResult(int id)
+        //// IActionResult permite retornar cualquier dato de tipo ActionResult o de cualquier tipo mientras esté dentro de la función Ok().
+        //{
+        //    var autor = context.Autores.FirstOrDefault(x => x.Id == id);
 
-            if (autor == null)
-            {
-                return NotFound();
-            }
+        //    if (autor == null)
+        //    {
+        //        return NotFound();
+        //    }
 
-            //return Ok(autor);
-            return Ok(7); // El problema es que el dato puede ser de cualquier tipo, el único requisito es que se encuentre en OK().
-                          // Es mejor utilizar ActionResult<> para tener mayor control sobre el dato devuelto.
-        }
+        //    //return Ok(autor);
+        //    return Ok(7); // El problema es que el dato puede ser de cualquier tipo, el único requisito es que se encuentre en OK().
+        //                  // Es mejor utilizar ActionResult<> para tener mayor control sobre el dato devuelto.
+        //}
 
-        //---------- GET ---------- api/autores/listado || /listado
+        //---------- GET ---------- api/autores/listado || /listado || /api/autores
 
-        [HttpGet("listado")] //Ahora la ruta será "/api/autores/listado"
-        [HttpGet("/listado")] //Ahora la ruta será "listado"
+        //[HttpGet("listado")] //Ahora la ruta será "/api/autores/listado"
+        //[HttpGet("/listado")] //Ahora la ruta será "listado"
         // Puede haber múltiples rutas para un mismo atributo de endpoint
-        [ServiceFilter(typeof(MiFiltroDeAccion))] //Filtro de tubería personalizado
-        public async Task<ActionResult<List<Autor>>> ListadoAutores() //Este endpoint devuelve la lista con todos los datos de la tabla Autor. La ruta es "api/autores"
+        [HttpGet]
+        //[ServiceFilter(typeof(MiFiltroDeAccion))] //Filtro de tubería personalizado
+        public async Task<ActionResult<List<AutorDTO>>> ListadoAutores() //Este endpoint devuelve la lista con todos los datos de la tabla Autor. La ruta es "api/autores"
         {
 
             // |---------|
@@ -133,35 +139,36 @@ namespace WebApiAutores.Controllers
             // - Critical
 
             //throw new NotImplementedException();
-            logger.LogInformation("Estamos obteniendo los autores"); 
-            servicio.RealizarTarea();
-            return await context.Autores.Include(x => x.Libros).ToListAsync();
+            //logger.LogInformation("Estamos obteniendo los autores"); 
+            //servicio.RealizarTarea();
+            var autores = await context.Autores./*Include(x => x.Libros).*/ToListAsync();
+            return mapper.Map<List<AutorDTO>>(autores);
         }
 
         //---------- GET ---------- api/autores/primero
 
-        [HttpGet("primero")] // -> Atributo del endpoint
-                             // Este es otro endpoint GET cuya ruta va a ser "api/autores/primero". Si no se indica ninguna cadena dará error ya que habrá dos endpoints GET para la misma ruta
-        public async Task<ActionResult<Autor>> PrimerAutor([FromHeader] int miValor, [FromQuery] string nombre, [FromQuery] string apellido) 
-            // Este endpoint devuelve el primer autor de la tabla Autor o un null si no hay ningún valor.
-            // El atributo [FromHeader] indica que los datos serán tomados del header y mapeados en 'miValor'.
-            // El atributo [FromQuery] indica que los datos serán tomados de una Query String y mapeados en 'nombre'.
-            // Una Query String es una sentencia que se coloca a continuación de la ruta y contiene datos de consulta
-            // Ej de Query String: "api/autores/primero?nombre=felipe&apellido=gavilan"
-            // "?" -> inicio del query
-            // "&" -> concatenación de consulta
-        {
-            return await context.Autores.FirstOrDefaultAsync();
-        }
+        //[HttpGet("primero")] // -> Atributo del endpoint
+        //                     // Este es otro endpoint GET cuya ruta va a ser "api/autores/primero". Si no se indica ninguna cadena dará error ya que habrá dos endpoints GET para la misma ruta
+        //public async Task<ActionResult<Autor>> PrimerAutor([FromHeader] int miValor, [FromQuery] string nombre, [FromQuery] string apellido) 
+        //    // Este endpoint devuelve el primer autor de la tabla Autor o un null si no hay ningún valor.
+        //    // El atributo [FromHeader] indica que los datos serán tomados del header y mapeados en 'miValor'.
+        //    // El atributo [FromQuery] indica que los datos serán tomados de una Query String y mapeados en 'nombre'.
+        //    // Una Query String es una sentencia que se coloca a continuación de la ruta y contiene datos de consulta
+        //    // Ej de Query String: "api/autores/primero?nombre=felipe&apellido=gavilan"
+        //    // "?" -> inicio del query
+        //    // "&" -> concatenación de consulta
+        //{
+        //    return await context.Autores.FirstOrDefaultAsync();
+        //}
 
         //---------- GET ---------- api/autores/{id}
 
         [HttpGet("{id:int}")] // La ruta será "api/autores/{id}" donde id es una variable (ej: api/autores/1 -> buscará el autor con id = 1)
                               // La restricción {:int} indica que solo se pueden introducir datos de tipo int, de lo contrario devuelve un 404.
-        public async Task<ActionResult<Autor>> Get([FromRoute]int id) // Este endpoint recibe por parámetro el {id}.
+        public async Task<ActionResult<AutorDTO>> Get([FromRoute]int id) // Este endpoint recibe por parámetro el {id}.
                                                                       // Existen también los atributos a nivel de parámetros. 
         {
-            var autor = await context.Autores.FirstOrDefaultAsync(x => x.Id == id); 
+            var autor = await context.Autores.FirstOrDefaultAsync(autorDB => autorDB.Id == id); 
             //Devuelve x, donde el Id de x ha de ser igual al parámetro {id} que recibe el endpoint.
             //Si no encuentra ningún autor con id = {id}, devolverá null.
 
@@ -171,80 +178,85 @@ namespace WebApiAutores.Controllers
             }
             //Para evitar devolver valores null se guarda el dato devuelto en una variable y con un if devolvemos un error 404 en vez del null.
 
-            return autor; 
+            return mapper.Map<AutorDTO>(autor); 
         }
 
         //---------- GET ---------- api/autores/{nombre}/{param2}/{param3} || api/autores/{nombre}/{param2/3} || api/autores/{nombre}
 
-        [HttpGet("{nombre}/{param2?}/{param3=persona}")] 
+        //[HttpGet("{nombre}/{param2?}/{param3=persona}")]
+        [HttpGet("{nombre}")]
         // No se puede colocar una restricción de tipo string.
         // Se pueden colocar infinitos parámetros.
         // Al colocar "?" después de param2 incicamos que es opcional.
         // Al igualar param3 a "persona" le estamos dando un valor predeterminado.
         // En este caso la ruta sería "api/autores/Alex/martillo" o "api/autores/Alex" o "api/autores/Alex/martillo/animal".
-        public async Task<ActionResult<Autor>> Get(string nombre, string param2, string param3) // Este endpoint recibe por parámetro el {nombre} de tipo string
+        public async Task<ActionResult<List<AutorDTO>>> Get(string nombre/*, string param2, string param3*/) // Este endpoint recibe por parámetro el {nombre} de tipo string
         {
-            var autor = await context.Autores.FirstOrDefaultAsync(x => x.Nombre.Contains(nombre)); 
+            var autores = await context.Autores.Where(autorDB => autorDB.Nombre.Contains(nombre)).ToListAsync(); 
             // En vez de igualarlo se utiliza la función Contains() que muestra todos los resultados que contiene esa cadena
 
-            if (autor == null)
+            if (autores == null)
             {
                 return NotFound();
             }
 
-            return autor;
+            return mapper.Map<List<AutorDTO>>(autores);
         }
 
         //---------- GET ---------- api/autores/GUID
 
-        [HttpGet("GUID")]
-        //[ResponseCache(Duration = 10)] 
-        //Filtro de tubería a nivel de acción -> indica que la respuesta dada a esta petición se va a guardar en el caché durante 10s. Durante los próximos 10s a una respuesta, todas las respuestas será la almacenada en la caché.
-        // Se utiliza para datos que no van a cambiar mucho.
-        // Aumenta la escalabilidad de la app.
-        [ServiceFilter(typeof(MiFiltroDeAccion))] //Filtro de tubería personalizado
-        public ActionResult ObtenerGuids()
-        {
-            return Ok(new
-            {
-                // Transient -> van a cambiar con cada ejecución y cada uno es diferente
-                // ---------------------------------------------------------------------
+        //[HttpGet("GUID")]
+        ////[ResponseCache(Duration = 10)] 
+        ////Filtro de tubería a nivel de acción -> indica que la respuesta dada a esta petición se va a guardar en el caché durante 10s. Durante los próximos 10s a una respuesta, todas las respuestas será la almacenada en la caché.
+        //// Se utiliza para datos que no van a cambiar mucho.
+        //// Aumenta la escalabilidad de la app.
+        //[ServiceFilter(typeof(MiFiltroDeAccion))] //Filtro de tubería personalizado
+        //public ActionResult ObtenerGuids()
+        //{
+        //    return Ok(new
+        //    {
+        //        // Transient -> van a cambiar con cada ejecución y cada uno es diferente
+        //        // ---------------------------------------------------------------------
 
-                AutoresControllerTransient = servicioTransient.guid, // Retorna el guid a través del ServicioB
-                ServicioA_Transient = servicio.ObtenerTransient(), // Retorna el guid a través del ServicioA
+        //        AutoresControllerTransient = servicioTransient.guid, // Retorna el guid a través del ServicioB
+        //        ServicioA_Transient = servicio.ObtenerTransient(), // Retorna el guid a través del ServicioA
 
-                // Scoped -> van a cambiar con cada ejecución pero son iguales los 2
-                // -----------------------------------------------------------------
+        //        // Scoped -> van a cambiar con cada ejecución pero son iguales los 2
+        //        // -----------------------------------------------------------------
 
-                AutoresControllerScoped = servicioScoped.guid, // Retorna el guid a través del ServicioB
-                ServicioA_Scoped = servicio.ObtenerScoped(), // Retorna el guid a través del ServicioA
+        //        AutoresControllerScoped = servicioScoped.guid, // Retorna el guid a través del ServicioB
+        //        ServicioA_Scoped = servicio.ObtenerScoped(), // Retorna el guid a través del ServicioA
 
-                // Singleton -> van a mantenerse durante todas las ejecuciones y son iguales los 2
-                // -------------------------------------------------------------------------------
+        //        // Singleton -> van a mantenerse durante todas las ejecuciones y son iguales los 2
+        //        // -------------------------------------------------------------------------------
 
-                AutoresControllerSingleton = servicioSingleton.guid, // Retorna el guid a través del ServicioB
-                ServicioA_Singleton = servicio.ObtenerSignleton() // Retorna el guid a través del ServicioA
-            });
-        }
+        //        AutoresControllerSingleton = servicioSingleton.guid, // Retorna el guid a través del ServicioB
+        //        ServicioA_Singleton = servicio.ObtenerSignleton() // Retorna el guid a través del ServicioA
+        //    });
+        //}
+
 
         //---------- POST ----------
 
         [HttpPost] //-> Atributo del endpoint
                    //Si se ejecuta una petición POST hacia este controlador, se ejecutará el código que hay dentro de este bloque
-        public async Task<ActionResult> Post([FromBody]Autor autor)
+        public async Task<ActionResult> Post([FromBody]AutorCreacionDTO autorCreacionDTO)
         {
 
-            var existeAutorConElMismoNombre = await context.Autores.AnyAsync(x => x.Nombre == autor.Nombre );
+            var existeAutorConElMismoNombre = await context.Autores.AnyAsync(x => x.Nombre == autorCreacionDTO.Nombre );
 
             if (existeAutorConElMismoNombre)
             {
-                return BadRequest($"Ya existe un autor con el nombre {autor.Nombre}");
+                return BadRequest($"Ya existe un autor con el nombre {autorCreacionDTO.Nombre}");
             }
 
-            context.Add(autor);
-            await context.SaveChangesAsync();
+            var autor = mapper.Map<Autor>(autorCreacionDTO); // Transforma la instancia de autorCreacionDTO en tipo de dato Autor
+
+            context.Add(autor); // Add() -> marca un objeto para poder ser insertado en una DB
+            await context.SaveChangesAsync(); // Se realiza la inserción
             return Ok();
         }
+
 
         //---------- PUT ----------
 

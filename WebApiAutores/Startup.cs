@@ -40,10 +40,12 @@ namespace WebApiAutores
             }).AddJsonOptions(x => 
                 x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
+            // Servicio para AplicationDBContext
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("defaultConnection")));
 
-            services.AddTransient<IServicio, ServicioA>(); // Utilizado en el ejemplo de como funciona cada tipo de servicio
+            services.AddAutoMapper(typeof(Startup));
+
 
             // |--------------------|
             // | TIPOS DE SERVICIOS |
@@ -51,7 +53,7 @@ namespace WebApiAutores
 
             //Transient
             //---------
-            services.AddTransient<ServicioTransient>();
+            //services.AddTransient<ServicioTransient>();
             //services.AddTransient<ServicioA>(); // También se puede configurar solamente para las clases, sin su interfaz
             // Cada vez que una clase requiera un IServicio, se le pasa una nueva instancia de la clase ServicioA.
             // Entre distintas peticiones http se proporcionarán diferenetes instancias.
@@ -59,22 +61,24 @@ namespace WebApiAutores
 
             //Scoped
             //------
-            services.AddScoped<ServicioScoped>();
+            //services.AddScoped<ServicioScoped>();
             // La instancia se ServicioA va a ser la misma en todo el contexto. Aumenta su tiempo de vida.
             // Entre distintas peticiones http se proporcionarán diferenetes instancias.
             // Ejemplo: AddDbContext
 
             //Singleton
             //---------
-            services.AddSingleton<ServicioSingleton>();
+            //services.AddSingleton<ServicioSingleton>();
             // La instancia se ServicioA va a ser la misma siempre, incluso entre diferentes peticiones http.
             // Ejemplo: capas de cache
 
-            services.AddTransient<MiFiltroDeAccion>(); // Servicio necesario para utilizar el filtro personalizado de acción.
+            //services.AddTransient<IServicio, ServicioA>(); // Utilizado en el ejemplo de como funciona cada tipo de servicio
 
-            services.AddHostedService<EscribirEnArchivo>();
+            //services.AddTransient<MiFiltroDeAccion>(); // Servicio necesario para utilizar el filtro personalizado de acción.
 
-            services.AddResponseCaching(); // Sevicio necesario para poder usar caché en nuestra app.
+            //services.AddHostedService<EscribirEnArchivo>();
+
+            //services.AddResponseCaching(); // Sevicio necesario para poder usar caché en nuestra app.
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(); // Servicio necesario para hacer filtros de autenticación
 
@@ -123,14 +127,14 @@ namespace WebApiAutores
             // Este es el primer middleware por tanto se ejecuta el primero.
             // Establece un mapa para la tubería, una bifurcación.
             // Si la ruta es /ruta1, se ejecuta lo de dentro, sino sigue el curso lineal.
-            app.Map("/ruta1", app =>
-            {
-                // Este midleware intercepta el resto de procesos.
-                app.Run(async contexto =>
-                {
-                    await contexto.Response.WriteAsync("Estoy interceptando la tubería");
-                });
-            });
+            //app.Map("/ruta1", app =>
+            //{
+            //    // Este midleware intercepta el resto de procesos.
+            //    app.Run(async contexto =>
+            //    {
+            //        await contexto.Response.WriteAsync("Estoy interceptando la tubería");
+            //    });
+            //});
             
             if (env.IsDevelopment()) // IsDevelopment -> utilidad que devuelve si estamos o no en desarrollo. No es un middleware.
                                      // Los que no se encuentran en este if se ejecutarán en producción.
@@ -144,7 +148,7 @@ namespace WebApiAutores
 
             app.UseRouting();
 
-            app.UseResponseCaching(); //Middleware por defecto para usar el caché
+            //app.UseResponseCaching(); //Middleware por defecto para usar el caché
 
             app.UseAuthorization(); //Middleware por defecto para usar la autenticación
 

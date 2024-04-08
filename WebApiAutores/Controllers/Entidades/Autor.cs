@@ -5,17 +5,17 @@ using WebApiAutores.Validaciones;
 
 namespace WebApiAutores.Controllers.Entidades
 {
-    public class Autor: IValidatableObject
+    public class Autor/*: IValidatableObject*/
     {
-        public int Id { get; set; }
+        public int Id { get; set; } // Id INT
 
         [Required(ErrorMessage = "El campo {0} es requerido")] // Indica que el campo Nombre es obligatorio.
                                                                // El parámetro ErrorMesage deja personalizar un mensaje de error.
                                                                // {0} tomará el valor de "Nombre".
         [StringLength(maximumLength: 120, ErrorMessage = "El campo {0} no debe de tener más de {1} carácteres")]
-        //[PrimeraLetraMayuscula] -> // Es una validacion personalizada. Se encuentra en la carpeta Validaciones.
+        [PrimeraLetraMayuscula] // -> Es una validacion personalizada. Se encuentra en la carpeta Validaciones.
         // Pueden existir infinitas condiciones
-        public string Nombre { get; set; }
+        public string Nombre { get; set; } // Nombre VARCHAR(120) REQUIRED
 
         //[Range(18, 120)]
         //[NotMapped] // Indica que la propiedad no va a ser parte de la tabla
@@ -29,31 +29,31 @@ namespace WebApiAutores.Controllers.Entidades
         //[NotMapped]
         //public string URL { get; set; }
 
-        public List<Libro> Libros { get; set; }
+        //public List<Libro> Libros { get; set; }
 
         //public int Menor { get; set; }
         //public int Mayor { get; set; }
 
-        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) // Interfaz para realizar validaciones a nivel de modelo
-        {
-            // Para que estas validaciones funcionen no debe haber validaciones por defecto ni a nivel de atributo
+        //public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) // Interfaz para realizar validaciones a nivel de modelo
+        //{
+        //    // Para que estas validaciones funcionen no debe haber validaciones por defecto ni a nivel de atributo
 
-            // ---------- Primera letra mayúscula de Nombre ----------
-            if (!string.IsNullOrEmpty(Nombre)) 
-            {
-                var primeraLetra = Nombre[0].ToString();
+        //    // ---------- Primera letra mayúscula de Nombre ----------
+        //    if (!string.IsNullOrEmpty(Nombre)) 
+        //    {
+        //        var primeraLetra = Nombre[0].ToString();
 
-                if (primeraLetra != primeraLetra.ToUpper())
-                {
-                    yield return new ValidationResult("La primera letra debe ser mayúscula", new string[] { nameof(Nombre) });
-                }
-            }
+        //        if (primeraLetra != primeraLetra.ToUpper())
+        //        {
+        //            yield return new ValidationResult("La primera letra debe ser mayúscula", new string[] { nameof(Nombre) });
+        //        }
+        //    }
 
-            // ---------- Mayor > Menor ----------
-            //if (Menor > Mayor)
-            //{
-            //    yield return new ValidationResult("Este valor no puede ser más grande que el campo Mayor", new string[] { nameof(Menor) });
-            //}
-        }
+        //    // ---------- Mayor > Menor ----------
+        //    //if (Menor > Mayor)
+        //    //{
+        //    //    yield return new ValidationResult("Este valor no puede ser más grande que el campo Mayor", new string[] { nameof(Menor) });
+        //    //}
+        //}
     }
 }
