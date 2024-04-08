@@ -8,6 +8,9 @@ startup.ConfigureServices(builder.Services);
 
 var app = builder.Build();
 
-startup.Configure(app, app.Environment);
+// Esta linea obtiene una instacia del ILogger para poder utilizarlo en el método Configure de la clase Startup.
+var servicioLogger = (ILogger<Startup>)app.Services.GetService(typeof(ILogger<Startup>));
+
+startup.Configure(app, app.Environment, servicioLogger);
 
 app.Run();

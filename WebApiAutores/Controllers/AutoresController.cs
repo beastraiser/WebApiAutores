@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using WebApiAutores.Controllers.Entidades;
+using WebApiAutores.Filtros;
 using WebApiAutores.Servicios;
 
 namespace WebApiAutores.Controllers
@@ -11,10 +13,11 @@ namespace WebApiAutores.Controllers
     // |-----------------------------|
 
     [ApiController] // Retorna un error 4XX si hay un error a nivel de modelo
-    [Route("api/autores")] 
+    [Route("api/autores")]
     //Esta es la ruta a través de la cual se accede a este controlador.
     //Se puede poner un placeholder entre corchetes "api/[controller]", el cual indicará el nombre del controlador "[autores]/controller", en este caso "autores".
     //Se podría poner solo /autores pero por buenas prácticas se pone api/autores, para saber que se está accediendo a una api.
+    //[Authorize] // Filtro de tubería a nivel de controlador -> no permite acceder a ninguna ruta a no ser que sea a través de un usuario autorizado
     public class AutoresController: ControllerBase //Esto es el controlador => clase que define la tabla y contiene los métodos para gestionar esa tabla (endpoints)
     {
 
@@ -23,8 +26,9 @@ namespace WebApiAutores.Controllers
         private readonly ServicioTransient servicioTransient;
         private readonly ServicioScoped servicioScoped;
         private readonly ServicioSingleton servicioSingleton;
+        private readonly ILogger<AutoresController> logger;
 
-        public AutoresController(ApplicationDbContext context, IServicio servicio, ServicioTransient servicioTransient, ServicioScoped servicioScoped, ServicioSingleton servicioSingleton) 
+        public AutoresController(ApplicationDbContext context, IServicio servicio, ServicioTransient servicioTransient, ServicioScoped servicioScoped, ServicioSingleton servicioSingleton, ILogger<AutoresController> logger) 
             // IServicio -> Esto se llama inyeccion de dependencias.
             // Se inyecta la interfaz que contiene múltiples servicios, en vez de un servicio concreto.
             // Esto se llama PRINCIPIO SOLID -> Depender de abstracciones y no de tipos concretos.
@@ -35,6 +39,7 @@ namespace WebApiAutores.Controllers
             this.servicioTransient = servicioTransient;
             this.servicioScoped = servicioScoped;
             this.servicioSingleton = servicioSingleton;
+            this.logger = logger;
         }
 
         // |-----------------------------|
@@ -111,8 +116,25 @@ namespace WebApiAutores.Controllers
         [HttpGet("listado")] //Ahora la ruta será "/api/autores/listado"
         [HttpGet("/listado")] //Ahora la ruta será "listado"
         // Puede haber múltiples rutas para un mismo atributo de endpoint
+        [ServiceFilter(typeof(MiFiltroDeAccion))] //Filtro de tubería personalizado
         public async Task<ActionResult<List<Autor>>> ListadoAutores() //Este endpoint devuelve la lista con todos los datos de la tabla Autor. La ruta es "api/autores"
         {
+
+            // |---------|
+            // | LOGGERS | 
+            // |---------|
+
+            //Tipos (menor a mayor severidad):
+            // - Trace
+            // - Debug
+            // - Information
+            // - Warning
+            // - Error
+            // - Critical
+
+            //throw new NotImplementedException();
+            logger.LogInformation("Estamos obteniendo los autores"); 
+            servicio.RealizarTarea();
             return await context.Autores.Include(x => x.Libros).ToListAsync();
         }
 
@@ -176,6 +198,11 @@ namespace WebApiAutores.Controllers
         //---------- GET ---------- api/autores/GUID
 
         [HttpGet("GUID")]
+        //[ResponseCache(Duration = 10)] 
+        //Filtro de tubería a nivel de acción -> indica que la respuesta dada a esta petición se va a guardar en el caché durante 10s. Durante los próximos 10s a una respuesta, todas las respuestas será la almacenada en la caché.
+        // Se utiliza para datos que no van a cambiar mucho.
+        // Aumenta la escalabilidad de la app.
+        [ServiceFilter(typeof(MiFiltroDeAccion))] //Filtro de tubería personalizado
         public ActionResult ObtenerGuids()
         {
             return Ok(new
