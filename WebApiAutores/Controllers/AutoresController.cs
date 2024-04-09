@@ -178,7 +178,7 @@ namespace WebApiAutores.Controllers
             }
             //Para evitar devolver valores null se guarda el dato devuelto en una variable y con un if devolvemos un error 404 en vez del null.
 
-            return mapper.Map<AutorDTO>(autor); 
+            return mapper.Map<AutorDTO>(autor);
         }
 
         //---------- GET ---------- api/autores/{nombre}/{param2}/{param3} || api/autores/{nombre}/{param2/3} || api/autores/{nombre}

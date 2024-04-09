@@ -15,7 +15,9 @@ namespace WebApiAutores.Controllers.Entidades
         [StringLength(maximumLength: 120, ErrorMessage = "El campo {0} no debe de tener más de {1} carácteres")]
         [PrimeraLetraMayuscula] // -> Es una validacion personalizada. Se encuentra en la carpeta Validaciones.
         // Pueden existir infinitas condiciones
-        public string Nombre { get; set; } // Nombre VARCHAR(120) REQUIRED
+        public string Nombre { get; set; } // Nombre VARCHAR(120) NOT NULL
+
+        public List<AutorLibro> AutoresLibros { get; set; }
 
         //[Range(18, 120)]
         //[NotMapped] // Indica que la propiedad no va a ser parte de la tabla
