@@ -165,10 +165,13 @@ namespace WebApiAutores.Controllers
 
         [HttpGet("{id:int}")] // La ruta será "api/autores/{id}" donde id es una variable (ej: api/autores/1 -> buscará el autor con id = 1)
                               // La restricción {:int} indica que solo se pueden introducir datos de tipo int, de lo contrario devuelve un 404.
-        public async Task<ActionResult<AutorDTO>> Get([FromRoute]int id) // Este endpoint recibe por parámetro el {id}.
+        public async Task<ActionResult<AutorDTOConLibros>> Get([FromRoute]int id) // Este endpoint recibe por parámetro el {id}.
                                                                       // Existen también los atributos a nivel de parámetros. 
         {
-            var autor = await context.Autores.FirstOrDefaultAsync(autorDB => autorDB.Id == id); 
+            var autor = await context.Autores
+                .Include(autorDB => autorDB.AutoresLibros)
+                .ThenInclude(autorLibroDB => autorLibroDB.Libro)
+                .FirstOrDefaultAsync(autorDB => autorDB.Id == id); 
             //Devuelve x, donde el Id de x ha de ser igual al parámetro {id} que recibe el endpoint.
             //Si no encuentra ningún autor con id = {id}, devolverá null.
 
@@ -178,7 +181,7 @@ namespace WebApiAutores.Controllers
             }
             //Para evitar devolver valores null se guarda el dato devuelto en una variable y con un if devolvemos un error 404 en vez del null.
 
-            return mapper.Map<AutorDTO>(autor);
+            return mapper.Map<AutorDTOConLibros>(autor);
         }
 
         //---------- GET ---------- api/autores/{nombre}/{param2}/{param3} || api/autores/{nombre}/{param2/3} || api/autores/{nombre}

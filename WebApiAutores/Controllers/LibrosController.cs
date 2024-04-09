@@ -31,18 +31,22 @@ namespace WebApiAutores.Controllers
         //---------- GET ---------- api/libros/{id:int}
 
         [HttpGet("{id:int}")]
-        public async Task<ActionResult<LibroDTO>> Get(int id)
+        public async Task<ActionResult<LibroDTOConAutores>> Get(int id)
         {
             var libro = await context.Libros
-                .Include(libroDB => libroDB.Comentarios) // Incluye el campo Comentarios (que contiene los comentarios de cada libro)
+                /*.Include(libroDB => libroDB.Comentarios)*/ // Incluye el campo Comentarios (que contiene los comentarios de cada libro)
+                .Include(libroDB => libroDB.AutoresLibros)
+                .ThenInclude(autorLibroDB => autorLibroDB.Autor)
                 .FirstOrDefaultAsync(libroDB => libroDB.Id == id);
+
+            libro.AutoresLibros = libro.AutoresLibros.OrderBy(x => x.Orden).ToList();
 
             if (libro == null)
             {
                 return NotFound();
             }
 
-            return mapper.Map<LibroDTO>(libro); // retorna libro como tipo de dato LibroDTO
+            return mapper.Map<LibroDTOConAutores>(libro); // retorna libro como tipo de dato LibroDTO
         }
 
         //---------- POST ----------
