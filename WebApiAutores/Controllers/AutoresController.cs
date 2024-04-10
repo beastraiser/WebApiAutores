@@ -163,8 +163,10 @@ namespace WebApiAutores.Controllers
 
         //---------- GET ---------- api/autores/{id}
 
-        [HttpGet("{id:int}")] // La ruta será "api/autores/{id}" donde id es una variable (ej: api/autores/1 -> buscará el autor con id = 1)
-                              // La restricción {:int} indica que solo se pueden introducir datos de tipo int, de lo contrario devuelve un 404.
+        [HttpGet("{id:int}", Name = "obtenerAutor")] 
+        // La ruta será "api/autores/{id}" donde id es una variable (ej: api/autores/1 -> buscará el autor con id = 1)
+        // La restricción {:int} indica que solo se pueden introducir datos de tipo int, de lo contrario devuelve un 404.
+        // El segundo parámetro, Name, indica el nombre que recibe esta ruta
         public async Task<ActionResult<AutorDTOConLibros>> Get([FromRoute]int id) // Este endpoint recibe por parámetro el {id}.
                                                                       // Existen también los atributos a nivel de parámetros. 
         {
@@ -243,10 +245,10 @@ namespace WebApiAutores.Controllers
 
         [HttpPost] //-> Atributo del endpoint
                    //Si se ejecuta una petición POST hacia este controlador, se ejecutará el código que hay dentro de este bloque
-        public async Task<ActionResult> Post([FromBody]AutorCreacionDTO autorCreacionDTO)
+        public async Task<ActionResult> Post([FromBody] AutorCreacionDTO autorCreacionDTO)
         {
 
-            var existeAutorConElMismoNombre = await context.Autores.AnyAsync(x => x.Nombre == autorCreacionDTO.Nombre );
+            var existeAutorConElMismoNombre = await context.Autores.AnyAsync(x => x.Nombre == autorCreacionDTO.Nombre);
 
             if (existeAutorConElMismoNombre)
             {
@@ -257,23 +259,36 @@ namespace WebApiAutores.Controllers
 
             context.Add(autor); // Add() -> marca un objeto para poder ser insertado en una DB
             await context.SaveChangesAsync(); // Se realiza la inserción
-            return Ok();
+
+            var autorDTO = mapper.Map<AutorDTO>(autor); // Mapeo necesario para el tipo autor, para no exponer la entidad real
+
+            return CreatedAtRoute("obtenerAutor", new { id = autor.Id }, autorDTO); 
+            // Retorna el nombre de la ruta que proporciona el recurso ("obtenerAutor"), el id del autor (new {id = autor.Id}) y el objeto creado en la DB (autorDTO).
+            // El objeto creado en la DB no puede ser del tipo "autor" -> se tiene que mapear
         }
 
 
         //---------- PUT ----------
 
         [HttpPut("{id:int}")] //api/autores/1
-        public async Task<ActionResult> Put(Autor autor, int id)
+        public async Task<ActionResult> Put(AutorCreacionDTO autorCreacionDTO, int id) 
+            // Se utiliza el DTO de AutorCreacion porque tiene los campos que necesitamos
+            // Se podría crear otro DTO
         {
-            if (autor.Id !=id)
+
+            var existe = await context.Autores.AnyAsync(x => x.Id == id);
+
+            if (!existe)
             {
-                return BadRequest("El id del autor no coincide con el id de la URL");
+                return NotFound();
             }
+
+            var autor = mapper.Map<Autor>(autorCreacionDTO);
+            autor.Id = id;
 
             context.Update(autor);
             await context.SaveChangesAsync();
-            return Ok();
+            return NoContent();
         }
 
         //---------- DELETE ----------
@@ -282,6 +297,7 @@ namespace WebApiAutores.Controllers
         public async Task<ActionResult> Delete(int id)
         {
             var existe = await context.Autores.AnyAsync(x=> x.Id ==id);
+
             if (!existe)
             {
                 return NotFound();
@@ -289,7 +305,7 @@ namespace WebApiAutores.Controllers
 
             context.Remove(new Autor { Id = id});
             await context.SaveChangesAsync();
-            return Ok();
+            return NoContent();
         }
     }
 }

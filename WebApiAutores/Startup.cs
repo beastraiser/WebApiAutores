@@ -38,7 +38,7 @@ namespace WebApiAutores
             {
                 opciones.Filters.Add(typeof(FiltroDeExcepcion)); // Linea para registrar los filtros personalizados a nivel global
             }).AddJsonOptions(x => 
-                x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+                x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles).AddNewtonsoftJson();
 
             // Servicio para AplicationDBContext
             services.AddDbContext<ApplicationDbContext>(options =>
